@@ -9,22 +9,26 @@ module.exports = class StormpathClient
 
     @client = new stormpath.Client apiKey:new stormpath.ApiKey @config.id, @config.secret
     
-  #todo: get all customData, not just brands
-  #todo: order by customdata.order, default 0
-  #todo: values later in the order that are value:false remove previous values
-  #todo: customdata.brand might have many keys.
+  #note: in the future we may fetch other customData besides brands.  This may have different logic.
   # sub is the subscriber url, from the idsite jwtResponse body
   getUserData: (sub, callback) ->
     @client.getAccount sub, (err, account) ->
       return callback err if err
       account.getGroups expand:'customData', (err, groups) ->
         return callback err if err
+        groups.items = groups.items.sort (a,b) -> (a.customData.order or 0) - (b.customData.order or 0)
 
-        brands = []
+        data = brands: []
         for item in groups.items
-          brands.push key for key,val of item.customData.brand when val is true
+          for key,val of item.customData.brand
+            if val is true and key not in data.brands
+              data.brands.push key
+            else if val is false
+              index = data.brands.indexOf key
+              if index >= 0
+                data.brands.splice index, 1
 
-        callback null, brands
+        callback null, data
 
   getIdSiteUrl: (callback) ->
     @client.getApplication @config.application_href, (err, application) ->
