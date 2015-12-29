@@ -33,7 +33,7 @@ describe 'handleIdSiteCallback', ->
     jwt = spc.jwt.create
       status: 'AUTHENTICATED'
       foo:'bar'
-    userData = ->
+    userData =
       brands: ['brand1','brand2']
       arbitrary: 'result'
       
@@ -41,7 +41,7 @@ describe 'handleIdSiteCallback', ->
 
     spc.handleIdSiteCallback jwt, (err, verified) ->
       assert.ifError err
-      assert.strictEqual verified.body.foo,  'bar'
+      assert.strictEqual verified.body.foo, 'bar'
       for key,val of userData
-        assert.deepEqual verified.body[key], val
+        assert.deepEqual verified.body.userdata[key], val
       done()
