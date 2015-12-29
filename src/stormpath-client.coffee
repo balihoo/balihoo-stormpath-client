@@ -1,24 +1,31 @@
 stormpath = require 'stormpath'
-njwt = require 'njwt'
 
 module.exports = class StormpathClient
   constructor: (@config) ->
-    unless @config.id? and @config.secret? and @config.application_href?
-      throw new Error "Missing constructor configuration is missing.\n" +
-        "Constructor parameter is an object that must contain id, secret, and applicatoin_href"
+    unless @config.id? and @config.secret? and @config.application_href? and @config.idsite_callback
+      throw new Error "Missing constructor configuration.\n" +
+        "Constructor parameter is an object that must contain id, secret, applicatoin_href, idsite_callback"
 
     @client = new stormpath.Client apiKey:new stormpath.ApiKey @config.id, @config.secret
-    
-  #note: in the future we may fetch other customData besides brands.  This may have different logic.
-  # sub is the subscriber url, from the idsite jwtResponse body
+    @jwt = new (require './jwt')(@config)
+
+  ###
+  # @param {string} sub - subscriber url, from the idsite jwtResponse body
+  ###
   getUserData: (sub, callback) ->
+    unless sub then return callback new Error 'sub url not provided'
     @client.getAccount sub, (err, account) ->
       return callback err if err
+      unless account.status is 'ENABLED' then return callback new Error 'Account not enabled'
+      
       account.getGroups expand:'customData', (err, groups) ->
         return callback err if err
         groups.items = groups.items.sort (a,b) -> (a.customData.order or 0) - (b.customData.order or 0)
 
-        data = brands: []
+        data =
+          brands: []
+          username: account.username
+          
         for item in groups.items
           for key,val of item.customData.brand
             if val is true and key not in data.brands
@@ -27,16 +34,41 @@ module.exports = class StormpathClient
               index = data.brands.indexOf key
               if index >= 0
                 data.brands.splice index, 1
+        #note: in the future we may fetch other customData besides brands.  This may have different logic.
 
         callback null, data
 
-  getIdSiteUrl: (callback) ->
-    @client.getApplication @config.application_href, (err, application) ->
+  ###
+  # @param {string} [state] - any value to be preserved after calling back.
+  #     Can be used, for example, to preserve the originally requested url, so you can
+  #     redirect the user there after validating their login
+  ###
+  getIdSiteUrl: (state, callback) ->
+    if typeof state is 'function'
+      callback = state
+      state = {}
+      
+    @client.getApplication @config.application_href, (err, application) =>
       return callback err if err
-      #todo: make id site callback configurable
-      #todo: include state, like the originally requested url. Whole url including protocol.
-      url = application.createIdSiteUrl callbackUri: 'http://localhost:8081/stormpath/idSiteCallback'
+      url = application.createIdSiteUrl
+        callbackUri: @config.idsite_callback
+        state: state
       callback null, url
+    
+  # @param {string} jwtResponse - response passed from the id site to your callback url.
+  # Calls back with any error or the verified jwt resopnse object extended with user data
+  handleIdSiteCallback: (jwtResponse, callback) ->
+    @jwt.verify jwtResponse, (err, verified) =>
+      return callback err if err
+      if verified.body.err then return callback new Error verified.body.err.message
+      # status other than AUTHENTICATED should be an error, handled above. Check again in case that assumption is wrong.
+      unless verified.body.status is 'AUTHENTICATED' then return callback new Error 'NOT AUTHENTICATED'
 
-  verifyJwtResponse: (jwtResponse, callback) ->
-    njwt.verify jwtResponse, @config.secret, callback
+      # The state is URI encoded transparently when gettind the ID Site url, but not automatically decoded.
+      verified.body.state = decodeURIComponent verified.body.state
+
+      @getUserData verified.body.sub, (err, userData) ->
+        return callback err if err
+        verified.body.userdata = userData
+        callback err, verified
+    
