@@ -1,13 +1,14 @@
 stormpath = require 'stormpath'
+jwt = require './jwt'
 
 module.exports = class StormpathClient
   constructor: (@config) ->
-    unless @config.id? and @config.secret? and @config.application_href? and @config.idsite_callback
+    unless @config?.id? and @config.secret? and @config.application_href? and @config.idsite_callback
       throw new Error "Missing constructor configuration.\n" +
         "Constructor parameter is an object that must contain id, secret, applicatoin_href, idsite_callback"
 
     @client = new stormpath.Client apiKey:new stormpath.ApiKey @config.id, @config.secret
-    @jwt = new (require './jwt')(@config)
+    @jwt = new jwt @config
 
   ###
   # @param {string} sub - subscriber url, from the idsite jwtResponse body
@@ -72,3 +73,4 @@ module.exports = class StormpathClient
         verified.body.userdata = userData
         callback err, verified
     
+module.exports.jwt = jwt

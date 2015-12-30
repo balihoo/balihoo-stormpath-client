@@ -2,7 +2,7 @@ njwt = require 'njwt'
 
 module.exports = class JWT
   constructor: (@config) ->
-    unless @config.secret?
+    unless @config?.secret?
       throw new Error "Missing constructor configuration.\n" +
         "Constructor parameter is an object that must contain secret"
   

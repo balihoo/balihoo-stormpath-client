@@ -20,13 +20,13 @@ describe 'jwt', ->
     jwt = spJwt.create {foo: 'bar'}
     assert.strictEqual typeof jwt, 'string'
     assert.strictEqual jwt.match(/\./g).length, 2
-  it 'can verify a jwt string and return as an object', ->
+  it 'can verify a jwt string and return as an object', (done) ->
     claims = name:'Sparky', dog:true
     jwt = spJwt.create claims
     spJwt.verify jwt, (err, verified) ->
       assert.strictEqual typeof verified, 'object'
       for key,val of claims
-        assert.strictEqual verified[key], val
+        assert.strictEqual verified.body[key], val
       done()
   it 'fails to verify a modified jwt header', (done) ->
     jwt = spJwt.create foo:'bar'
@@ -63,11 +63,4 @@ describe 'jwt', ->
     jwt = spJwt.create {}, exp
     spJwt.verify jwt, (err, verified) ->
       assert.strictEqual err.message, 'Jwt is expired'
-      done()
-  it 'is available as a property on the stormpath client', (done) ->
-    client = require '../lib/stormpath-client'
-    spc = new client id:'myid', secret:'mysecret', application_href:'myhref', idsite_callback:'myidhandler'
-    jwt = spc.jwt.create foo:'bar'
-    spc.jwt.verify jwt, (err, verified) ->
-      assert.strictEqual verified.body.foo, 'bar'
       done()
