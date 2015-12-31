@@ -50,6 +50,10 @@ module.exports = class StormpathClient
       state = {}
       
     @client.getApplication @config.application_href, (err, application) =>
+      if err
+        if err.inner?.code is 'ECONNREFUSED'
+          err = new Error 'Connection to Stormpath failed. Check the config application_href'
+        return callback err
       return callback err if err
       url = application.createIdSiteUrl
         callbackUri: @config.idsite_callback
