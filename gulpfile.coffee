@@ -11,7 +11,7 @@ src = 'src/*.coffee'
 
 gulp.task 'lint', ->
   gulp.src src
-  .pipe coffeelint './coffeelint.conf.json'
+  .pipe coffeelint './test/coffeelint.conf.json'
   .pipe coffeelint.reporter()
   .pipe coffeelint.reporter 'fail'
   

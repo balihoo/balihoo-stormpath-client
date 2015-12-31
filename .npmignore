@@ -1,2 +1,5 @@
 .idea
 src
+test
+.npmignore
+balihoo-stormpath-client-*.tgz
