@@ -1,6 +1,16 @@
 stormpath = require 'stormpath'
 jwt = require './jwt'
 
+#recursively extend object
+extend = (a, b) ->
+  for key,val of b
+    a[key] =
+      if typeof val is 'object' and not Array.isArray val
+        extend a[key] or {}, val
+      else
+        val
+  a
+      
 module.exports = class StormpathClient
   constructor: (@config) ->
     unless @config?.id? and @config.secret? and @config.application_href? and @config.idsite_callback
@@ -23,21 +33,11 @@ module.exports = class StormpathClient
         return callback err if err
         groups.items = groups.items.sort (a,b) -> (a.customData.order or 0) - (b.customData.order or 0)
 
-        data =
-          brands: []
-          username: account.username
-          
-        for item in groups.items
-          for key,val of item.customData.brand
-            if val is true and key not in data.brands
-              data.brands.push key
-            else if val is false
-              index = data.brands.indexOf key
-              if index >= 0
-                data.brands.splice index, 1
-        #note: in the future we may fetch other customData besides brands.  This may have different logic.
+        data = groups.items.reduce extend, {}
+        data.customData or= {} #empty object if no group memberships
+        data.customData.username = account.username
 
-        callback null, data
+        callback null, data.customData
 
   ###
   # @param {string} [state] - any value to be preserved after calling back.
@@ -47,7 +47,7 @@ module.exports = class StormpathClient
   getIdSiteUrl: (state, callback) ->
     if typeof state is 'function'
       callback = state
-      state = {}
+      state = ''
       
     @client.getApplication @config.application_href, (err, application) =>
       if err

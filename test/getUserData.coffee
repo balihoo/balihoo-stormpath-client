@@ -22,7 +22,6 @@ describe 'getUserData', ->
     spc.getUserData 'sub', (err, data) ->
       assert.deepEqual data, 
         username: testAccount.username
-        brands:[]
       done()
   it 'returns error if account not enabled', (done) ->
     spc.client =
@@ -36,84 +35,108 @@ describe 'getUserData', ->
       assert.strictEqual err.message, 'sub url not provided'
       done()
 
-  context 'brands', ->
-    it 'maps group customData brands to a brands array', (done) ->
-      mockGroupData [
-        {brand: brand1: true}
-        {otherThing: stuff: true}
-        {brand: brand2: true}
-      ]
-      spc.getUserData 'sub', (err, data) ->
-        assert.ifError err
-        #order is not specified
-        assert.deepEqual data.brands.length, 2
-        assert 'brand1' in data.brands
-        assert 'brand2' in data.brands
-        done()
-    it 'can include multiple brands per group', (done) ->
-      mockGroupData [
-        {brand:
-          brand1: true
-          brand2: true
-        }
-        {brand: brand3: true}
-      ]
-      spc.getUserData 'sub', (err, data) ->
-        assert.deepEqual data.brands, ['brand1', 'brand2', 'brand3']
-        done()
-    it "doesn't include the same brand more than once", (done) ->
-      mockGroupData [
-        {brand: brand1: true}
-        {brand: brand1: true}
-      ]
-      spc.getUserData 'sub', (err, data) ->
-        assert.deepEqual data.brands, ['brand1']
-        done()
-    it 'orders groups when order is specified. Default order is 0', (done) ->
-      mockGroupData [
-        {
-          brand: brand1: true
-          order: 5
-        }
-        {
-          brand: brand2: true
-          order: 2
-        }
-        {
-          brand: brand3: true
-          order: 6
-        }
-        {
-          brand: brand4: true
-          #no order, implies 0
-        }
-        {
-          brand: brand5: true
-          order: 1
-        }
-      ]
-      spc.getUserData 'sub', (err, data) ->
-        assert.deepEqual data.brands, [
-          'brand4'
-          'brand5'
-          'brand2'
-          'brand1'
-          'brand3'
-        ]
-        done()
-    it 'later groups may remove previously granted access', (done) ->
-      mockGroupData [
-        {brand: brand1: true}
-        {brand: brand2: true}
-        {brand: brand3: true}
-        {
-          brand: brand2: false
-          order: 1
-        }
-      ]
-      spc.getUserData 'sub', (err, data) ->
-        assert.deepEqual data.brands, ['brand1', 'brand3']
-        done()
+  it 'recursively merges arbitrary customData into one object', (done) ->
+    mockGroupData [
+      {brand: brand1: true}
+      {otherThing: stuff: true}
+      {brand: brand2: true}
+      {notAnObject: 'its a string'}
+      {really: nested: object: with: 'value'}
+      {really: nested: string: 'foo'}
+    ]
+    spc.getUserData 'sub', (err, data) ->
+      assert.ifError err
+      #order is not specified
+      assert.strictEqual Object.keys(data).length, 5 #4 above plus username
+      assert.deepEqual Object.keys(data.brand).length, 2
+      assert.strictEqual data.brand['brand1'], true
+      assert.strictEqual data.brand['brand2'], true
+      assert.deepEqual Object.keys(data.otherThing).length, 1
+      assert.strictEqual data.otherThing.stuff, true
+      assert.strictEqual data.really.nested.object.with, 'value'
+      assert.strictEqual data.really.nested.string, 'foo'
+      done()
+  it 'replaces array values', (done) ->
+    mockGroupData [
+      {thing: ['an','array']}
+      {thing: ['of', 'strings']}
+    ]
+    spc.getUserData 'sub', (err, data) ->
+      assert.strictEqual data.thing.length, 2
+      assert.deepEqual data.thing, ['of', 'strings']
+      done()
+  it 'can include multiple brands per group', (done) ->
+    mockGroupData [
+      {brand:
+        brand1: true
+        brand2: true
+      }
+      {brand: brand3: true}
+    ]
+    spc.getUserData 'sub', (err, data) ->
+      assert.deepEqual data.brand, {
+        brand1: true
+        brand2: true
+        brand3: true
+      }
+      done()
+  it "doesn't include the same brand more than once", (done) ->
+    mockGroupData [
+      {brand: brand1: true}
+      {brand: brand1: true}
+    ]
+    spc.getUserData 'sub', (err, data) ->
+      assert.deepEqual data.brand, brand1:true
+      done()
+  it 'orders groups when order is specified. Default order is 0', (done) ->
+    mockGroupData [
+      {
+        brand: brand1: true
+        order: 5
+      }
+      {
+        brand: brand2: true
+        order: 2
+      }
+      {
+        brand: brand3: true
+        order: 6
+      }
+      {
+        brand: brand4: true
+        #no order, implies 0
+      }
+      {
+        brand: brand5: true
+        order: 1
+      }
+    ]
+    spc.getUserData 'sub', (err, data) ->
+      assert.deepEqual data.brand, {
+        brand4: true
+        brand5: true
+        brand2: true
+        brand1: true
+        brand3: true
+      }
+      done()
+  it 'later groups may overwrite previously granted access', (done) ->
+    mockGroupData [
+      {brand: brand1: true}
+      {brand: brand2: true}
+      {brand: brand3: true}
+      {
+        brand: brand2: false
+        order: 1
+      }
+    ]
+    spc.getUserData 'sub', (err, data) ->
+      assert.deepEqual data.brand, {
+        brand1: true
+        brand2: false
+        brand3: true
+      }
+      done()
 
 
 
