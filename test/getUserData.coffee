@@ -17,24 +17,27 @@ mockGroupData = (customDataArray) ->
       cb1 null, account
 
 describe 'getUserData', ->
+  it 'returns username', (done) ->
+    mockGroupData []
+    spc.getUserData 'sub', (err, username, data) ->
+      assert.strictEqual username, testAccount.username
+      done()
   it 'returns an object with empty properties if a user has no groups', (done) ->
     mockGroupData []
-    spc.getUserData 'sub', (err, data) ->
-      assert.deepEqual data, 
-        username: testAccount.username
+    spc.getUserData 'sub', (err, username, data) ->
+      assert.deepEqual data, {}
       done()
   it 'returns error if account not enabled', (done) ->
     spc.client =
       getAccount: (sub, callback) ->
         callback null, status:'DISABLED'
-    spc.getUserData 'sub', (err, data) ->
+    spc.getUserData 'sub', (err, username, data) ->
       assert.strictEqual err.message, 'Account not enabled'
       done()
   it 'returns error if no sub provided', (done) ->
-    spc.getUserData undefined, (err, data) ->
+    spc.getUserData undefined, (err, username, data) ->
       assert.strictEqual err.message, 'sub url not provided'
       done()
-
   it 'recursively merges arbitrary customData into one object', (done) ->
     mockGroupData [
       {brand: brand1: true}
@@ -44,10 +47,10 @@ describe 'getUserData', ->
       {really: nested: object: with: 'value'}
       {really: nested: string: 'foo'}
     ]
-    spc.getUserData 'sub', (err, data) ->
+    spc.getUserData 'sub', (err, username, data) ->
       assert.ifError err
       #order is not specified
-      assert.strictEqual Object.keys(data).length, 5 #4 above plus username
+      assert.strictEqual Object.keys(data).length, 4
       assert.deepEqual Object.keys(data.brand).length, 2
       assert.strictEqual data.brand['brand1'], true
       assert.strictEqual data.brand['brand2'], true
@@ -61,7 +64,7 @@ describe 'getUserData', ->
       {thing: ['an','array']}
       {thing: ['of', 'strings']}
     ]
-    spc.getUserData 'sub', (err, data) ->
+    spc.getUserData 'sub', (err, username, data) ->
       assert.strictEqual data.thing.length, 2
       assert.deepEqual data.thing, ['of', 'strings']
       done()
@@ -73,7 +76,7 @@ describe 'getUserData', ->
       }
       {brand: brand3: true}
     ]
-    spc.getUserData 'sub', (err, data) ->
+    spc.getUserData 'sub', (err, username, data) ->
       assert.deepEqual data.brand, {
         brand1: true
         brand2: true
@@ -85,7 +88,7 @@ describe 'getUserData', ->
       {brand: brand1: true}
       {brand: brand1: true}
     ]
-    spc.getUserData 'sub', (err, data) ->
+    spc.getUserData 'sub', (err, username, data) ->
       assert.deepEqual data.brand, brand1:true
       done()
   it 'orders groups when order is specified. Default order is 0', (done) ->
@@ -111,7 +114,7 @@ describe 'getUserData', ->
         order: 1
       }
     ]
-    spc.getUserData 'sub', (err, data) ->
+    spc.getUserData 'sub', (err, username, data) ->
       assert.deepEqual data.brand, {
         brand4: true
         brand5: true
@@ -130,7 +133,7 @@ describe 'getUserData', ->
         order: 1
       }
     ]
-    spc.getUserData 'sub', (err, data) ->
+    spc.getUserData 'sub', (err, username, data) ->
       assert.deepEqual data.brand, {
         brand1: true
         brand2: false

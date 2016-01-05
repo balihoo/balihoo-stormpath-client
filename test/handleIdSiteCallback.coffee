@@ -34,14 +34,16 @@ describe 'handleIdSiteCallback', ->
       status: 'AUTHENTICATED'
       foo:'bar'
     userData =
-      brands: ['brand1','brand2']
+      brand: {'brand1':true,'brand2':true}
       arbitrary: 'result'
-      
-    spc.getUserData = (sub, callback) -> callback null, userData
+    username = 'test user'
+    
+    spc.getUserData = (sub, callback) -> callback null, username, userData
 
     spc.handleIdSiteCallback jwt, (err, verified) ->
       assert.ifError err
       assert.strictEqual verified.body.foo, 'bar'
+      assert.strictEqual verified.body.username, username
       for key,val of userData
         assert.deepEqual verified.body.userdata[key], val
       done()

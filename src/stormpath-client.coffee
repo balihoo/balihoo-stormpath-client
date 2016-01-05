@@ -22,6 +22,7 @@ module.exports = class StormpathClient
 
   ###
   # @param {string} sub - subscriber url, from the idsite jwtResponse body
+  # @param {function} callback - parameters will be error, username, customData
   ###
   getUserData: (sub, callback) ->
     unless sub then return callback new Error 'sub url not provided'
@@ -34,10 +35,8 @@ module.exports = class StormpathClient
         groups.items = groups.items.sort (a,b) -> (a.customData.order or 0) - (b.customData.order or 0)
 
         data = groups.items.reduce extend, {}
-        data.customData or= {} #empty object if no group memberships
-        data.customData.username = account.username
 
-        callback null, data.customData
+        callback null, account.username, data.customData or {}
 
   ###
   # @param {string} [state] - any value to be preserved after calling back.
@@ -72,8 +71,9 @@ module.exports = class StormpathClient
       # The state is URI encoded transparently when gettind the ID Site url, but not automatically decoded.
       verified.body.state = decodeURIComponent verified.body.state
 
-      @getUserData verified.body.sub, (err, userData) ->
+      @getUserData verified.body.sub, (err, username, userData) ->
         return callback err if err
+        verified.body.username = username
         verified.body.userdata = userData
         callback err, verified
     
