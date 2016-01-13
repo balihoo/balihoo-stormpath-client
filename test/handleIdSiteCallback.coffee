@@ -2,7 +2,13 @@
 client = require '../lib/stormpath-client'
 assert = require 'assert'
 
-spc = new client id:'myid', secret:'mysecret', application_href:'myhref', idsite_callback:'myidhandler'
+spc = new client
+  id:'myid'
+  secret:'mysecret'
+  application_href:'myhref'
+  idsite_callback:'myidhandler'
+  organization_key: 'myorg'
+
 
 describe 'handleIdSiteCallback', ->
   it 'rejects expired jwts', (done) ->

@@ -1,6 +1,6 @@
 {
   "name": "balihoo-stormpath-client",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A node client for interacting with Stormpath and parsing Balihoo-specific customData values",
   "main": "lib/stormpath-client.js",
   "directories": {
@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "njwt": "^0.2.3",
-    "stormpath": "^0.15.1"
+    "stormpath": "^0.15.4"
   },
   "devDependencies": {
     "coffee-script": "^1.10.0",

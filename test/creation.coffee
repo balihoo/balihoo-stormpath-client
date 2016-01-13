@@ -16,16 +16,15 @@ describe 'construction', ->
       secret: 'mysecret'
       application_href: 'myhref'
       idsite_callback: 'mycallback'
+      organization_key: 'myorg'
       
   describe 'stormpath-client', ->
-    spcErrorMessage = "Missing constructor configuration.\n" +
-            "Constructor parameter is an object that must contain id, secret, applicatoin_href, idsite_callback"
     it 'requires a config object', (done) ->
       try
         spc = new stormpath_client()
         assert.fail 'error not thrown'
       catch e
-        assert.strictEqual e.message, spcErrorMessage
+        assert.strictEqual e.message, 'Missing config object'
         done()
     it 'requires config.id', (done) ->
       delete config.id
@@ -33,7 +32,7 @@ describe 'construction', ->
         spc = new stormpath_client config
         assert.fail 'error not thrown'
       catch e
-        assert.strictEqual e.message, spcErrorMessage
+        assert.strictEqual e.message, "Missing constructor configuration parameter: id."
         done()
     it 'requires config.secret', (done) ->
       delete config.secret
@@ -41,7 +40,7 @@ describe 'construction', ->
         spc = new stormpath_client config
         assert.fail 'error not thrown'
       catch e
-        assert.strictEqual e.message, spcErrorMessage
+        assert.strictEqual e.message, "Missing constructor configuration parameter: secret."
         done()
     it 'requires config.application_href', (done) ->
       delete config.application_href
@@ -49,7 +48,7 @@ describe 'construction', ->
         spc = new stormpath_client config
         assert.fail 'error not thrown'
       catch e
-        assert.strictEqual e.message, spcErrorMessage
+        assert.strictEqual e.message, "Missing constructor configuration parameter: application_href."
         done()
     it 'requires config.idsite_callback', (done) ->
       delete config.idsite_callback
@@ -57,7 +56,15 @@ describe 'construction', ->
         spc = new stormpath_client config
         assert.fail 'error not thrown'
       catch e
-        assert.strictEqual e.message, spcErrorMessage
+        assert.strictEqual e.message, "Missing constructor configuration parameter: idsite_callback."
+        done()
+    it 'requires config.idsite_callback', (done) ->
+      delete config.organization_key
+      try
+        spc = new stormpath_client config
+        assert.fail 'error not thrown'
+      catch e
+        assert.strictEqual e.message, "Missing constructor configuration parameter: organization_key."
         done()
     it 'succeeds when all config present', (done) ->
       spc = new stormpath_client config

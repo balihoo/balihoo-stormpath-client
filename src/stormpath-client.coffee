@@ -13,9 +13,11 @@ extend = (a, b) ->
       
 module.exports = class StormpathClient
   constructor: (@config) ->
-    unless @config?.id? and @config.secret? and @config.application_href? and @config.idsite_callback
-      throw new Error "Missing constructor configuration.\n" +
-        "Constructor parameter is an object that must contain id, secret, applicatoin_href, idsite_callback"
+    unless @config? then throw new Error 'Missing config object'
+    requiredParams = ['id','secret','application_href','idsite_callback','organization_key']
+    for param in requiredParams
+      unless @config[param]?
+        throw new Error "Missing constructor configuration parameter: #{param}."
 
     @client = new stormpath.Client apiKey:new stormpath.ApiKey @config.id, @config.secret
     @jwt = new jwt @config
@@ -47,16 +49,19 @@ module.exports = class StormpathClient
     if typeof state is 'function'
       callback = state
       state = ''
-      
+
     @client.getApplication @config.application_href, (err, application) =>
       if err
         if err.inner?.code is 'ECONNREFUSED'
           err = new Error 'Connection to Stormpath failed. Check the config application_href'
         return callback err
-      return callback err if err
+
       url = application.createIdSiteUrl
         callbackUri: @config.idsite_callback
         state: state
+        organizationNameKey: @config.organization_key
+        showOrganizationField: true
+
       callback null, url
     
   # @param {string} jwtResponse - response passed from the id site to your callback url.
