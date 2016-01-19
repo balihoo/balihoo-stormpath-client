@@ -1,5 +1,6 @@
 stormpath = require 'stormpath'
 jwt = require './jwt'
+async = require 'async'
 
 #recursively extend object
 extend = (a, b) ->
@@ -31,14 +32,26 @@ module.exports = class StormpathClient
     @client.getAccount sub, (err, account) ->
       return callback err if err
       unless account.status is 'ENABLED' then return callback new Error 'Account not enabled'
+        
+      offset = 0
+      size = null
+      customDataArray = []
       
-      account.getGroups expand:'customData', (err, groups) ->
+      async.doWhilst (cb) ->
+        account.getGroups {expand:'customData', offset:offset}, (err, groups) ->
+          return cb err if err
+          size = groups.size
+          customDataArray.push g.customData for g in groups.items
+          offset += groups.limit
+          cb()
+      , -> #test. do while true
+        offset < size
+      , (err) -> #done
         return callback err if err
-        groups.items = groups.items.sort (a,b) -> (a.customData.order or 0) - (b.customData.order or 0)
-
-        data = groups.items.reduce extend, {}
-
-        callback null, account.username, data.customData or {}
+        customDataArray = customDataArray.sort (a,b) -> (a.order or 0) - (b.order or 0)
+        customDataObject = customDataArray.reduce extend, {}
+        delete customDataObject.order #will be the order of the last customData that had one. Not useful to caller
+        callback null, account.username, customDataObject
 
   ###
   # @param {string} [state] - any value to be preserved after calling back.
