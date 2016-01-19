@@ -18,7 +18,12 @@ mockGroupData = (customDataArray) ->
         status: 'ENABLED'
         username: testAccount.username
         getGroups: (options, cb2) ->
-          cb2 null, items:(customData:cd for cd in customDataArray)
+          result =
+            offset: options.offset or 0
+            limit: options.limit or 25
+            size: customDataArray.length
+          result.items = (customData:cd for cd in customDataArray[result.offset...(result.offset + result.limit)])
+          cb2 null,result
       cb1 null, account
 
 describe 'getUserData', ->
@@ -145,6 +150,28 @@ describe 'getUserData', ->
         brand3: true
       }
       done()
-
+  it 'does not return the order key', (done) ->
+    mockGroupData [
+      {
+        brand1:true
+        order:1
+      }
+    ]
+    spc.getUserData 'sub', (err, username, data) ->
+      assert.strictEqual data.order?, false
+      done()
+  it 'de-paginates', (done) ->
+    data = []
+    size = 40
+    for i in [1..size]
+      cd = {}
+      cd["brand#{i}"] = true
+      data.push cd
+    assert.strictEqual data.length, size
+    mockGroupData data
+    spc.getUserData 'sub', (err, username, data) ->
+      assert.strictEqual Object.keys(data).length, size
+      done()
+    
 
 
