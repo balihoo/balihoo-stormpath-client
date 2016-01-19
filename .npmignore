@@ -3,3 +3,4 @@ src
 test
 .npmignore
 balihoo-stormpath-client-*.tgz
+gulpfile.coffee
