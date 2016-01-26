@@ -5,7 +5,7 @@ spJwt = new jwtLib secret:'mysecret'
 
 objectToBase64 = (o) ->
   s = JSON.stringify o
-  new Buffer(o).toString 'base64'
+  new Buffer(s).toString 'base64'
 base64ToObject = (b64) ->
   s = new Buffer(b64, 'base64').toString()
   JSON.parse s

@@ -7,6 +7,7 @@ spc = new client
   secret:'mysecret'
   application_href:'myhref'
   idsite_callback:'myidhandler'
+  idsite_logouturl: 'mylogout'
   organization_key: 'myorg'
 
 

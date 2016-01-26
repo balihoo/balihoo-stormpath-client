@@ -15,7 +15,7 @@ extend = (a, b) ->
 module.exports = class StormpathClient
   constructor: (@config) ->
     unless @config? then throw new Error 'Missing config object'
-    requiredParams = ['id','secret','application_href','idsite_callback','organization_key']
+    requiredParams = ['id','secret','application_href','idsite_callback', 'idsite_logouturl', 'organization_key']
     for param in requiredParams
       unless @config[param]?
         throw new Error "Missing constructor configuration parameter: #{param}."
@@ -54,11 +54,14 @@ module.exports = class StormpathClient
         callback null, account.username, customDataObject
 
   ###
+  # This is a private function, execute via call, passing in the appropriate this context
   # @param {string} [state] - any value to be preserved after calling back.
   #     Can be used, for example, to preserve the originally requested url, so you can
   #     redirect the user there after validating their login
+  # @param {function} {callback} - callback function takes two paramerers, error and url.
+  # @param {boolean} {logout} - flag for whether we are generating a logout url or not
   ###
-  getIdSiteUrl: (state, callback) ->
+  genIdSiteUrl = (state, logout=false, callback) ->
     if typeof state is 'function'
       callback = state
       state = ''
@@ -69,16 +72,40 @@ module.exports = class StormpathClient
           err = new Error 'Connection to Stormpath failed. Check the config application_href'
         return callback err
 
-      url = application.createIdSiteUrl
-        callbackUri: @config.idsite_callback
+      params =
         state: state
         organizationNameKey: @config.organization_key
         showOrganizationField: true
 
-      callback null, url
-    
+      # handle logout if necessary
+      params.callbackUri = if logout then @config.idsite_logouturl else @config.idsite_callback
+      params.logout = logout
+
+      callback null, application.createIdSiteUrl params      # all good, so call our callback with the url
+
+  ###
+  # Handles generating a login url
+  # @param {string} [state] - any value to be preserved after calling back.
+  #     Can be used, for example, to preserve the originally requested url, so you can
+  #     redirect the user there after validating their login
+  # @param {function} {callback} - callback function takes two paramerers, error and url.
+  ###
+  getIdSiteUrl: (state, callback) -> genIdSiteUrl.call(@, state, false, callback)
+
+  ###
+  # Handles generating a logout url
+  # @param {string} [state] - any value to be preserved after calling back.
+  #     Can be used, for example, to preserve the originally requested url, so you can
+  #     redirect the user there after validating their login
+  # @param {function} {callback} - callback function takes two paramerers, error and url.
+  ###
+  getIdSiteLogoutUrl: (state, callback) -> genIdSiteUrl.call(@, state, true, callback)
+
+  ###
+  # Handles login callbacks
   # @param {string} jwtResponse - response passed from the id site to your callback url.
   # Calls back with any error or the verified jwt resopnse object extended with user data
+  ###
   handleIdSiteCallback: (jwtResponse, callback) ->
     @jwt.verify jwtResponse, (err, verified) =>
       return callback err if err
@@ -94,5 +121,19 @@ module.exports = class StormpathClient
         verified.body.username = username
         verified.body.userdata = userData
         callback err, verified
+
+  ###
+  # Handles logout callbacks
+  # @param {string} jwtResponse - response passed from the id site to your callback url.
+  # Calls back with any error or the verified jwt resopnse object extended with user data
+  ###
+  handleIdSiteLogout: (jwtResponse, callback) ->
+    @jwt.verify jwtResponse, (err, verified) =>
+      return callback err if err
+      if verified.body.err then return callback new Error verified.body.err.message
+      # status other than LOGOUT should be an error, handled above. Check again in case that assumption is wrong.
+      unless verified.body.status is 'LOGOUT' then return callback new Error 'NOT LOGGED OUT'
+
+      callback null #execute our callback now we have been logged out
     
 module.exports.jwt = jwt

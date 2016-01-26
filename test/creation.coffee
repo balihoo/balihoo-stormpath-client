@@ -16,6 +16,7 @@ describe 'construction', ->
       secret: 'mysecret'
       application_href: 'myhref'
       idsite_callback: 'mycallback'
+      idsite_logouturl: 'mylogout'
       organization_key: 'myorg'
       
   describe 'stormpath-client', ->
@@ -58,7 +59,15 @@ describe 'construction', ->
       catch e
         assert.strictEqual e.message, "Missing constructor configuration parameter: idsite_callback."
         done()
-    it 'requires config.idsite_callback', (done) ->
+    it 'requires config.idsite_logouturl', (done) ->
+      delete config.idsite_logouturl
+      try
+        spc = new stormpath_client config
+        assert.fail 'error not thrown'
+      catch e
+        assert.strictEqual e.message, "Missing constructor configuration parameter: idsite_logouturl."
+        done()
+    it 'requires config.organization_key', (done) ->
       delete config.organization_key
       try
         spc = new stormpath_client config
