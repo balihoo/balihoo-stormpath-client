@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "async": "^1.5.2",
+    "extend": "^3.0.0",
     "njwt": "^0.2.3",
     "stormpath": "^0.15.4"
   },

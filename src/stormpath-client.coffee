@@ -1,16 +1,9 @@
 stormpath = require 'stormpath'
 jwt = require './jwt'
 async = require 'async'
+extend = require 'extend'
 
-#recursively extend object
-extend = (a, b) ->
-  for key,val of b
-    a[key] =
-      if typeof val is 'object' and not Array.isArray val
-        extend a[key] or {}, val
-      else
-        val
-  a
+
       
 module.exports = class StormpathClient
   constructor: (@config) ->
@@ -28,6 +21,11 @@ module.exports = class StormpathClient
   # @param {function} callback - parameters will be error, username, customData
   ###
   getUserData: (sub, callback) ->
+
+    # utility function used below to do deep copy
+    extendDeep = (a, b) ->
+      extend true, a, b
+
     unless sub then return callback new Error 'sub url not provided'
     @client.getAccount sub, (err, account) ->
       return callback err if err
@@ -49,7 +47,8 @@ module.exports = class StormpathClient
       , (err) -> #done
         return callback err if err
         customDataArray = customDataArray.sort (a,b) -> (a.order or 0) - (b.order or 0)
-        customDataObject = customDataArray.reduce extend, {}
+        customDataObject = customDataArray.reduce extendDeep, {}
+
         delete customDataObject.order #will be the order of the last customData that had one. Not useful to caller
         callback null, account.username, customDataObject
 
@@ -76,10 +75,8 @@ module.exports = class StormpathClient
         state: state
         organizationNameKey: @config.organization_key
         showOrganizationField: true
-
-      # handle logout if necessary
-      params.callbackUri = if logout then @config.idsite_logouturl else @config.idsite_callback
-      params.logout = logout
+        logout:  logout
+        callbackUri: if logout then @config.idsite_logouturl else @config.idsite_callback
 
       callback null, application.createIdSiteUrl params      # all good, so call our callback with the url
 
