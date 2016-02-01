@@ -7,6 +7,7 @@ spc = new client
   secret:'mysecret'
   application_href:'myhref'
   idsite_callback:'myidhandler'
+  idsite_logouturl: 'mylogout'
   organization_key: 'myorg'
 
 testAccount =
@@ -68,6 +69,22 @@ describe 'getUserData', ->
       assert.strictEqual data.otherThing.stuff, true
       assert.strictEqual data.really.nested.object.with, 'value'
       assert.strictEqual data.really.nested.string, 'foo'
+      done()
+  it 'handles expected merge groups', (done) ->
+    mockGroupData [
+      {app: frontend: true}
+      {app: formbuilder: true}
+      {order: 1, app: frontend: nested: 12, moreNested: 'moredata'}
+    ]
+
+    spc.getUserData 'sub', (err, username, data) ->
+      assert.ifError err
+      #order is not specified
+      assert.strictEqual Object.keys(data).length, 1
+      assert.deepEqual Object.keys(data.app).length, 2
+      assert.strictEqual data.app.formbuilder, true
+      assert.strictEqual data.app.frontend.nested, 12
+      assert.strictEqual data.app.frontend.moreNested, 'moredata'
       done()
   it 'replaces array values', (done) ->
     mockGroupData [
