@@ -1,6 +1,6 @@
 {
   "name": "balihoo-stormpath-client",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "A node client for interacting with Stormpath and parsing Balihoo-specific customData values",
   "main": "lib/stormpath-client.js",
   "directories": {
