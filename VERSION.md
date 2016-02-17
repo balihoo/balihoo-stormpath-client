@@ -1,4 +1,6 @@
 #Version History
+## 2.0.3 - Added api basic auth support
+
 ## 2.0.2 - Fix for bad publish
 
 ## 2.0.1 - Breaking change to add logout support

@@ -16,8 +16,23 @@ module.exports = class StormpathClient
     @client = new stormpath.Client apiKey:new stormpath.ApiKey @config.id, @config.secret
     @jwt = new jwt @config
 
+
+
   ###
-  # @param {string} sub - subscriber url, from the idsite jwtResponse body
+  # returns a reference to an application object
+  # expects a callback that takes an error param and application param
+  ###
+  getApplication: (callback) ->
+    @client.getApplication @config.application_href, (err, application) =>
+      if err
+        if err.inner?.code is 'ECONNREFUSED'
+          err = new Error 'Connection to Stormpath failed. Check the config application_href'
+        return callback err
+
+      callback null, application
+
+  ###
+  # @param {string} sub - subscriber url
   # @param {function} callback - parameters will be error, username, customData
   ###
   getUserData: (sub, callback) ->
@@ -30,11 +45,11 @@ module.exports = class StormpathClient
     @client.getAccount sub, (err, account) ->
       return callback err if err
       unless account.status is 'ENABLED' then return callback new Error 'Account not enabled'
-        
+
       offset = 0
       size = null
       customDataArray = []
-      
+
       async.doWhilst (cb) ->
         account.getGroups {expand:'customData', offset:offset}, (err, groups) ->
           return cb err if err
@@ -53,11 +68,12 @@ module.exports = class StormpathClient
         callback null, account.username, customDataObject
 
   ###
-  # This is a private function, execute via call, passing in the appropriate this context
+  # This is a private function, execute via call, passing in the appropriate 'this' context
+  # e.g. genIdSiteUrl.call(this, ....)
   # @param {string} [state] - any value to be preserved after calling back.
   #     Can be used, for example, to preserve the originally requested url, so you can
   #     redirect the user there after validating their login
-  # @param {function} {callback} - callback function takes two paramerers, error and url.
+  # @param {function} {callback} - callback function takes two parameters, error and url.
   # @param {boolean} {logout} - flag for whether we are generating a logout url or not
   ###
   genIdSiteUrl = (state, logout=false, callback) ->
@@ -65,11 +81,8 @@ module.exports = class StormpathClient
       callback = state
       state = ''
 
-    @client.getApplication @config.application_href, (err, application) =>
-      if err
-        if err.inner?.code is 'ECONNREFUSED'
-          err = new Error 'Connection to Stormpath failed. Check the config application_href'
-        return callback err
+    @getApplication (err, application) =>
+      return callback err if err
 
       params =
         state: state
@@ -132,5 +145,27 @@ module.exports = class StormpathClient
       unless verified.body.status is 'LOGOUT' then return callback new Error 'NOT LOGGED OUT'
 
       callback null #execute our callback now we have been logged out
-    
+
+
+  ###
+  # Handles authenticating api requests
+  # @param {object} request  This is the node server request object
+  # the callback is a standard node.js callback, taking an err param and authResult response
+  # so it can be easily promisified by bluebird if needed
+  ###
+  authApiRequest: (request, callback) ->
+    @getApplication (err, application) =>
+      return callback err if err
+
+      application.authenticateApiRequest request: request, (err, authResult) =>
+        return callback err if err
+
+        @getUserData authResult.account.href, (err, username, userdata) ->
+          return callback err if err
+
+          callback err,
+            username: username
+            userdata: userdata
+
+
 module.exports.jwt = jwt
