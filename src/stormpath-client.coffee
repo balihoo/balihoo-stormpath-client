@@ -92,8 +92,8 @@ module.exports = class StormpathClient
   ###
   # Handles generating a logout url
   # @param {string} [state] - any value to be preserved after calling back.
-  #     Can be used, for example, to preserve the originally requested url, so you can
-  #     redirect the user there after validating their login
+  #     Can be used, for example, to preserve the page logging out from.  This might be useful
+  #     for example if logging right back in should return the user to the same page.
   # @param {function} {callback} - callback function takes two paramerers, error and url.
   ###
   getIdSiteLogoutUrl: (state, callback) -> genIdSiteUrl.call(@, state, true, callback)
@@ -111,7 +111,8 @@ module.exports = class StormpathClient
       unless verified.body.status is 'AUTHENTICATED' then return callback new Error 'NOT AUTHENTICATED'
 
       # The state is URI encoded transparently when gettind the ID Site url, but not automatically decoded.
-      verified.body.state = decodeURIComponent verified.body.state
+      if verified.body.state
+        verified.body.state = decodeURIComponent verified.body.state
 
       @getUserData verified.body.sub, (err, username, userData) ->
         return callback err if err
@@ -125,12 +126,16 @@ module.exports = class StormpathClient
   # Calls back with any error or the verified jwt resopnse object extended with user data
   ###
   handleIdSiteLogout: (jwtResponse, callback) ->
-    @jwt.verify jwtResponse, (err, verified) =>
+    @jwt.verify jwtResponse, (err, verified) ->
       return callback err if err
       if verified.body.err then return callback new Error verified.body.err.message
       # status other than LOGOUT should be an error, handled above. Check again in case that assumption is wrong.
       unless verified.body.status is 'LOGOUT' then return callback new Error 'NOT LOGGED OUT'
 
-      callback null #execute our callback now we have been logged out
+      # The state is URI encoded transparently when gettind the ID Site url, but not automatically decoded.
+      if verified.body.state
+        verified.body.state = decodeURIComponent verified.body.state
+      
+      callback null, verified #execute our callback now we have been logged out
     
 module.exports.jwt = jwt

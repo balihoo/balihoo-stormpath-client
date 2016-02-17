@@ -43,3 +43,17 @@ describe 'handleIdSiteLogout', ->
     spc.handleIdSiteLogout jwt, (err) ->
       assert.ifError err
       done()
+  it 'returns verified jwt', (done) ->
+    state = 'mystate'
+    jwt = spc.jwt.create
+      status: 'LOGOUT'
+      state: state
+    spc.handleIdSiteLogout jwt, (err, verified) ->
+      assert.strictEqual verified.body.state, state
+      done()
+  it 'doesnt add state if none existed before', (done) ->
+    jwt = spc.jwt.create
+      status: 'LOGOUT'
+    spc.handleIdSiteLogout jwt, (err, verified) ->
+      assert.strictEqual typeof verified.body.state, 'undefined'
+      done()
