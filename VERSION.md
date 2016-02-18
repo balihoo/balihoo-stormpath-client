@@ -1,5 +1,8 @@
 #Version History
 
+## 2.0.4
+- Added api basic auth support
+
 ## 2.0.3
 - handleIdSiteLogout calls back with verified jwtResponse.
 
