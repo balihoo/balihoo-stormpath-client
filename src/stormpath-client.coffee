@@ -23,7 +23,7 @@ module.exports = class StormpathClient
   # expects a callback that takes an error param and application param
   ###
   getApplication: (callback) ->
-    @client.getApplication @config.application_href, (err, application) =>
+    @client.getApplication @config.application_href, (err, application) ->
       if err
         if err.inner?.code is 'ECONNREFUSED'
           err = new Error 'Connection to Stormpath failed. Check the config application_href'
