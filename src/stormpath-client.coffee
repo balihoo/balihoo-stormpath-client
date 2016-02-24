@@ -162,7 +162,13 @@ module.exports = class StormpathClient
     @getApplication (err, application) =>
       return callback err if err
 
-      application.authenticateApiRequest request: request, (err, authResult) =>
+      cleanRequest =              # only send stormpath api the needed information
+        url: request.url
+        headers:
+          authorization:  request?.headers?.authorization || request?.headers?.Authorization
+        method: request.method
+
+      application.authenticateApiRequest request: cleanRequest, (err, authResult) =>
         return callback err if err
 
         @getUserData authResult.account.href, (err, username, userdata) ->

@@ -1,5 +1,8 @@
 #Version History
 
+## 2.0.5
+- Added api documentation and filter the request object sent to stormpath api
+
 ## 2.0.4
 - Added api basic auth support
 

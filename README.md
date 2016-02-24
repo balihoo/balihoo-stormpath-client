@@ -52,6 +52,16 @@ Logging out of both your application and Stormpath follows a similar structure t
 1. Invalidate local session (clear the cookie, delete the session from the server, etc).
 1. Redirect to some helpful logout url.  This could be the page they were originally on, which having no session should direct them to log back in.  It could also be some friendly landing page that requires no auth.
 
+## Handling api/basic auth
+### authApiRequest(request, callback)
+This call allows the stormpath client to authenticate basic api requests. The request object is a standard node.js request object. Internally it is filtered to only pass the information needed by stormapth api
+
+This method will process the request header looking for a basic auth signature and then verify the credentials against those in the stormpath database.
+
+In order to use this scheme, an api key pair must be created in the stormpath administration interface. The api key id and api key secret must be used as the username and password respectively for the basic auth request
+
+The callback function is called with the (err, username, userdata). The err object will be non-null on an error condition, and the username and userdata object will be returned on success (err = null)
+
 ## JWT
 The Stormpath client uses [JWT](http://jwt.io) for various things.  The balihoo-stormpath-client uses an implementation that shares a secret key.  A few JWT functions are wrapped and exposed, and may be used directly if needed.  A built JWT client is available on a built stormpath-client object, or one may be created directly from the same stormpath-client require.
 
