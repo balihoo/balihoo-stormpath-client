@@ -15,7 +15,7 @@ module.exports = class StormpathClient
 
       @client = new stormpath.Client
         apiKey: new stormpath.ApiKey @config.id, @config.secret
-        timeout: 5000 #ms
+        timeout: 10000 #ms (i.e. 10 seconds)
 
     @jwt = new jwt @config
 
