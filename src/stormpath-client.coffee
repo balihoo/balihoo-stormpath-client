@@ -13,7 +13,10 @@ module.exports = class StormpathClient
       unless @config[param]?
         throw new Error "Missing constructor configuration parameter: #{param}."
 
-    @client = new stormpath.Client apiKey:new stormpath.ApiKey @config.id, @config.secret
+      @client = new stormpath.Client
+        apiKey: new stormpath.ApiKey @config.id, @config.secret
+        timeout: 5000 #ms
+
     @jwt = new jwt @config
 
 
@@ -25,8 +28,11 @@ module.exports = class StormpathClient
   getApplication: (callback) ->
     @client.getApplication @config.application_href, (err, application) ->
       if err
-        if err.inner?.code is 'ECONNREFUSED'
-          err = new Error 'Connection to Stormpath failed. Check the config application_href'
+        switch err.inner?.code
+          when 'ECONNREFUSED'
+            err = new Error 'Connection to Stormpath failed. Check the config application_href'
+          when 'ETIMEDOUT'
+            err = new Error 'Connection to Stormpath timed out. Check Stormpath server status'
         return callback err
 
       callback null, application
