@@ -1,5 +1,8 @@
 #Version History
 
+## 2.0.6
+- Added timeout for stormpath
+
 ## 2.0.5
 - Added api documentation and filter the request object sent to stormpath api
 
