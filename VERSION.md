@@ -1,5 +1,8 @@
 #Version History
 
+## 2.0.7
+- Documentation fix.
+
 ## 2.0.6
 - Added timeout for stormpath
 

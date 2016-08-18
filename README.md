@@ -60,7 +60,7 @@ This method will process the request header looking for a basic auth signature a
 
 In order to use this scheme, an api key pair must be created in the stormpath administration interface. The api key id and api key secret must be used as the username and password respectively for the basic auth request
 
-The callback function is called with the (err, username, userdata). The err object will be non-null on an error condition, and the username and userdata object will be returned on success (err = null)
+The callback function is passed any error and an object containing username and userdata on success.
 
 ## JWT
 The Stormpath client uses [JWT](http://jwt.io) for various things.  The balihoo-stormpath-client uses an implementation that shares a secret key.  A few JWT functions are wrapped and exposed, and may be used directly if needed.  A built JWT client is available on a built stormpath-client object, or one may be created directly from the same stormpath-client require.
