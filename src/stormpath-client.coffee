@@ -2,7 +2,15 @@ stormpath = require 'stormpath'
 jwt = require './jwt'
 async = require 'async'
 extend = require 'extend'
+lru = require 'lru-cache'
+hash = require 'object-hash'
 
+CACHE_TIMEOUT = 1000 * 60 * 30     # 30 minutes
+CACHE_MAX_ENTRIES = 100
+
+apiLRUCache = lru
+  max: CACHE_MAX_ENTRIES
+  maxAge: CACHE_TIMEOUT
 
       
 module.exports = class StormpathClient
@@ -165,24 +173,31 @@ module.exports = class StormpathClient
   # so it can be easily promisified by bluebird if needed
   ###
   authApiRequest: (request, callback) ->
-    @getApplication (err, application) =>
-      return callback err if err
-
-      cleanRequest =              # only send stormpath api the needed information
-        url: request.url
-        headers:
-          authorization:  request?.headers?.authorization || request?.headers?.Authorization
-        method: request.method
-
-      application.authenticateApiRequest request: cleanRequest, (err, authResult) =>
+    cleanRequest =              # only send stormpath api the needed information
+      url: request.url
+      headers:
+        authorization:  request?.headers?.authorization || request?.headers?.Authorization
+      method: request.method
+    hashKey = hash.MD5 cleanRequest
+    console.log "Hash key = #{hashKey}"
+    if apiLRUCache.has hashKey                      # return immediately if we have item in cache
+      callback null, apiLRUCache.get hashKey
+    else
+      @getApplication (err, application) =>
         return callback err if err
 
-        @getUserData authResult.account.href, (err, username, userdata) ->
+        application.authenticateApiRequest request: cleanRequest, (err, authResult) =>
           return callback err if err
 
-          callback err,
-            username: username
-            userdata: userdata
+          @getUserData authResult.account.href, (err, username, userdata) ->
+            return callback err if err
+
+            userInfo =
+              username: username
+              userdata: userdata
+
+            apiLRUCache.set hashKey, userInfo
+            callback err, userInfo
 
 
 module.exports.jwt = jwt

@@ -1,5 +1,8 @@
 #Version History
 
+## 2.0.8
+- Added LRU Cache to authApiRequest call
+
 ## 2.0.7
 - Documentation fix.
 
