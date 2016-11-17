@@ -12,7 +12,7 @@ apiLRUCache = lru
   max: CACHE_MAX_ENTRIES
   maxAge: CACHE_TIMEOUT
 
-      
+
 module.exports = class StormpathClient
   constructor: (@config) ->
     unless @config? then throw new Error 'Missing config object'
@@ -179,7 +179,7 @@ module.exports = class StormpathClient
         authorization:  request?.headers?.authorization || request?.headers?.Authorization
       method: request.method
     hashKey = hash.MD5 cleanRequest
-    console.log "Hash key = #{hashKey}"
+
     if apiLRUCache.has hashKey                      # return immediately if we have item in cache
       callback null, apiLRUCache.get hashKey
     else
@@ -201,3 +201,6 @@ module.exports = class StormpathClient
 
 
 module.exports.jwt = jwt
+
+module.exports.__testing =
+  apiLRUCache: apiLRUCache
