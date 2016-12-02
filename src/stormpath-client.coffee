@@ -3,7 +3,6 @@ jwt = require './jwt'
 async = require 'async'
 extend = require 'extend'
 lru = require 'lru-cache'
-hash = require 'object-hash'
 
 CACHE_TIMEOUT = 1000 * 60 * 30     # 30 minutes
 CACHE_MAX_ENTRIES = 100
@@ -173,15 +172,16 @@ module.exports = class StormpathClient
   # so it can be easily promisified by bluebird if needed
   ###
   authApiRequest: (request, callback) ->
+    authorization = request?.headers?.authorization || request?.headers?.Authorization
+
     cleanRequest =              # only send stormpath api the needed information
       url: request.url
       headers:
-        authorization:  request?.headers?.authorization || request?.headers?.Authorization
+        authorization: authorization
       method: request.method
-    hashKey = hash.MD5 cleanRequest
 
-    if apiLRUCache.has hashKey                      # return immediately if we have item in cache
-      callback null, apiLRUCache.get hashKey
+    if apiLRUCache.has authorization                      # return immediately if we have item in cache
+      callback null, apiLRUCache.get authorization
     else
       @getApplication (err, application) =>
         return callback err if err
@@ -196,7 +196,7 @@ module.exports = class StormpathClient
               username: username
               userdata: userdata
 
-            apiLRUCache.set hashKey, userInfo
+            apiLRUCache.set authorization, userInfo
             callback err, userInfo
 
 

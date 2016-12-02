@@ -1,4 +1,3 @@
-hash = require 'object-hash'
 client = require '../lib/stormpath-client'
 assert = require 'assert'
 sinon = require 'sinon'
@@ -46,7 +45,7 @@ beforeEach ->
       authorization: fix.auth
     method: fix.method
 
-  fix.hashKey = hash.MD5 fix.cleanRequest
+  fix.hashKey = fix.auth
 
   # create mocked functions
   fix.application =
